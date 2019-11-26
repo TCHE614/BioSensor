@@ -11,7 +11,6 @@
 
 #define USE_ARDUINO_INTERRUPTS true    // Set-up low-level interrupts for most acurate BPM math.
 #include <PulseSensorPlayground.h>     // Includes the PulseSensorPlayground Library.   
-#include <stdio.h>
 
 //  Variables
 const int PulseWire = 0;       // PulseSensor PURPLE WIRE connected to ANALOG PIN 0
@@ -27,10 +26,6 @@ void setup() {
 
   Serial.begin(9600);          // For Serial Monitor
 
-  //Open File for writing
-  FILE * fp; 
-  fp = fopen ("/home/tk/Desktop/Taiwan/Arduino","w");
-  
   // Configure the PulseSensor object, by assigning our variables to it. 
   pulseSensor.analogInput(PulseWire);   
   pulseSensor.blinkOnPulse(LED13);       //auto-magically blink Arduino's LED with heartbeat.
@@ -38,8 +33,7 @@ void setup() {
 
   // Double-check the "pulseSensor" object was created and "began" seeing a signal. 
    if (pulseSensor.begin()) {
-    Serial.println("We created a pulseSensor Object !");  //This prints one time at Arduino power-up,  or on Arduino reset.
-    fprintf (fp, "This is line %d\n",1);  
+    //Serial.println("We created a pulseSensor Object !");  //This prints one time at Arduino power-up,  or on Arduino reset.  
   }
 }
 
@@ -51,9 +45,10 @@ void loop() {
                                                // "myBPM" hold this BPM value now. 
 
 if (pulseSensor.sawStartOfBeat()) {            // Constantly test to see if "a beat happened". 
- Serial.println("♥  A HeartBeat Happened ! "); // If test is "true", print a message "a heartbeat happened".
- Serial.print("BPM: ");                        // Print phrase "BPM: " 
- Serial.println(myBPM);                        // Print the value inside of myBPM. 
+ //Serial.println("♥  A HeartBeat Happened ! "); // If test is "true", print a message "a heartbeat happened".
+ //Serial.print("BPM: ");                        // Print phrase "BPM: " 
+ Serial.print(myBPM);  
+ Serial.print("\n");// Print the value inside of myBPM. 
 }
 
   delay(20);                    // considered best practice in a simple sketch.

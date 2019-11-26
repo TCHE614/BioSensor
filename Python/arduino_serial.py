@@ -1,18 +1,42 @@
 import serial
 import sqlite3
 import time
+import sys, select, os
 #Future additions that can be added: encryption so that user data eg bpm is encrypted
-#set up securoty so a password and username set up to ensure only the docot can access these information
+#set up security so a password and username set up to ensure only the doctor can access the information
 
+# s=b'0000'
 sample =0
 sampleFlag = True
-# ASk for nmae of that data that is getting entered
-PatientsName = input("Please enter in your name: ")
+CreateDatabaseFlag = False
+previousValue = 60 #average value not used
+# Ask for name of that data that is getting entered
+while True:
+    PatientsName = input("Please enter in your name: ")
+    #wait for a valid name to be given
+    if not PatientsName:
+        print("The answer given does not compute!! Try again")
+        continue
+    else:
+        break
 print("Hi", PatientsName)
+#open either the linux port or windows port
+try:
+    #linux
+    ser = serial.Serial('/dev/ttyACM0', 9600, timeout=None, parity=serial.PARITY_NONE, rtscts=1) 
+except:
+    try:
+        #windows
+        ser = serial.Serial('COM5', 9600, timeout=None, parity=serial.PARITY_NONE, rtscts=1)
+    except:
+        #no ports
+        print("Ports are invalid")
+        exit
 
 while 1:
     #set up serial connection with Arduino
-    ser = serial.Serial('/dev/ttyACM0', 9600, timeout=None, parity=serial.PARITY_NONE, rtscts=1)
+    # print("test1")
+    #reading the serial inputs
     s = ser.read_until()
     BPMDigit = s[:-1]     #Remove \n from serial input
   
@@ -23,23 +47,58 @@ while 1:
     sample += 1
     if sample >10 and sampleFlag == True:
         print("Data is now being captured")
+        previousValue = IntBPM
         sampleFlag = False
 
     #Using epoch time 12:00am, January 1, 1970 as reference 
     currenttime = time.time() #number of seconds since the reference point
 
+    #make sure that only valid data is put into the database so random spikes should be ignored
 
     #ensure that only valid data is written into the database
-    if IntBPM != -1 and sampleFlag == False:
+    if IntBPM != -1 and sampleFlag == False :
         #Open database 
-        conn = sqlite3.connect("BPMDatabase.db")
-        c = conn.cursor()
-        c.execute("""INSERT INTO BPM 
-                (Patient ,BPMValue, Time) 
-                values 
-                (?,?,?)""",(PatientsName,IntBPM,currenttime,))
-        conn.commit()
-        conn.close()
+        #try catch statements as different sources require different paths
+        #running on VS Code
+        try:
+            conn = sqlite3.connect("Python/BPMDatabase.db")
+            print("one")
+
+            c = conn.cursor()
+            c.execute("""INSERT INTO BPM 
+                    (Patient ,BPMValue, Time) 
+                    values 
+                    (?,?,?)""",(PatientsName,IntBPM,currenttime,))
+            conn.commit()
+            conn.close()
+        except:
+            #running from termial
+            try :
+                conn = sqlite3.connect("BPMDatabase.db")
+                print("two")
+                c = conn.cursor()
+                c.execute("""INSERT INTO BPM 
+                        (Patient ,BPMValue, Time) 
+                        values 
+                        (?,?,?)""",(PatientsName,IntBPM,currenttime,))
+                conn.commit()
+                conn.close()
+            except:
+                pass
+                #Creating database since not there
+                print("Creating database")
+                conn = sqlite3.connect("BPMDatabase.db")
+                c = conn.cursor()
+                if CreateDatabaseFlag == False:
+                    #first instances create the table and database
+                    c.execute("""CREATE TABLE "BPM" ("Patient"	TEXT, "BPMValue" INTEGER,"Time"	BLOB)""")
+                    CreateDatabaseFlag = True
+                conn.commit()
+                conn.close()
+
+                
     #print("Sample = %d", sample)
     print(int(BPMDecoded))
     
+
+
