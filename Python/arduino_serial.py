@@ -2,6 +2,7 @@ import serial
 import sqlite3
 import time
 import sys, select, os
+import serial.tools.list_ports
 #Future additions that can be added: encryption so that user data eg bpm is encrypted
 #set up security so a password and username set up to ensure only the doctor can access the information
 
@@ -20,6 +21,14 @@ while True:
     else:
         break
 print("Hi", PatientsName)
+
+#Finding the Arudino port and seeting that as the serial port input
+ports = list(serial.tools.list_ports.comports())
+for p in ports:
+     if 'Arduino Uno' in p.description:
+        port = p.device
+        print('Using ' + p.device + " as the serial")
+
 #open either the linux port or windows port
 try:
     #linux
@@ -27,7 +36,7 @@ try:
 except:
     try:
         #windows
-        ser = serial.Serial('COM5', 9600, timeout=None, parity=serial.PARITY_NONE, rtscts=1)
+        ser = serial.Serial(port, 9600, timeout=None, parity=serial.PARITY_NONE, rtscts=1)
     except:
         #no ports
         print("Ports are invalid")
