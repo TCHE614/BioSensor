@@ -11,6 +11,8 @@ sample =0
 sampleFlag = True
 CreateDatabaseFlag = False
 previousValue = 60 #average value not used
+NoDatatimer =0 # if no data has been detected re sample the data. 
+
 # Ask for name of that data that is getting entered
 while True:
     PatientsName = input("Please enter in your name: ")
@@ -22,7 +24,7 @@ while True:
         break
 print("Hi", PatientsName)
 
-#Finding the Arudino port and seeting that as the serial port input
+#Finding the Arudino port and seeting that as the serial port
 ports = list(serial.tools.list_ports.comports())
 for p in ports:
      if 'Arduino Uno' in p.description:
@@ -32,14 +34,14 @@ for p in ports:
 #open either the linux port or windows port
 try:
     #linux
-    ser = serial.Serial('/dev/ttyACM0', 9600, timeout=None, parity=serial.PARITY_NONE, rtscts=1) 
+    ser = serial.Serial('/dev/ttyACM0', 9600, timeout=5, parity=serial.PARITY_NONE, rtscts=1) 
 except:
     try:
         #windows
-        ser = serial.Serial(port, 9600, timeout=None, parity=serial.PARITY_NONE, rtscts=1)
+        ser = serial.Serial(port, 9600, timeout=5, parity=serial.PARITY_NONE, rtscts=1)
     except:
         #no ports
-        print("Ports are invalid")
+        print("No Ports Found ")
         exit
 
 while 1:
@@ -50,14 +52,25 @@ while 1:
     BPMDigit = s[:-1]     #Remove \n from serial input
   
     BPMDecoded = BPMDigit.decode("utf-8") #decode byte into string then int 
-    IntBPM = int(BPMDecoded)
-
+    try:
+        IntBPM = int(BPMDecoded)
+    except ValueError:
+        # no input for 5 seconds so need to re sample the data and ignore the first few data points
+        sampleFlag = True
+        sample = 0
+        IntBPM = -1
+        print("Timeout occured")
+        
     #Only after 20 inputs then we will start capturing data ensuring steady state
     sample += 1
     if sample >10 and sampleFlag == True:
         print("Data is now being captured")
         previousValue = IntBPM
         sampleFlag = False
+    # elif sample> 10 and NoDatatimer >30:
+    #     print("Data is now being captured")
+    #     previousValue = IntBPM
+    #     sampleFlag = False
 
     #Using epoch time 12:00am, January 1, 1970 as reference 
     currenttime = time.time() #number of seconds since the reference point
@@ -69,9 +82,10 @@ while 1:
         #Open database 
         #try catch statements as different sources require different paths
         #running on VS Code
+        
         try:
             conn = sqlite3.connect("Python/BPMDatabase.db")
-            print("one")
+            #print("one")
 
             c = conn.cursor()
             c.execute("""INSERT INTO BPM 
@@ -84,7 +98,7 @@ while 1:
             #running from termial
             try :
                 conn = sqlite3.connect("BPMDatabase.db")
-                print("two")
+                #print("two")
                 c = conn.cursor()
                 c.execute("""INSERT INTO BPM 
                         (Patient ,BPMValue, Time) 
@@ -107,7 +121,10 @@ while 1:
 
                 
     #print("Sample = %d", sample)
-    print(int(BPMDecoded))
+    try:
+        print(int(BPMDecoded))
+    except: 
+        pass
     
 
 

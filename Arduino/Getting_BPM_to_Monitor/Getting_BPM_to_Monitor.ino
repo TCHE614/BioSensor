@@ -11,6 +11,10 @@
 
 #define USE_ARDUINO_INTERRUPTS true    // Set-up low-level interrupts for most acurate BPM math.
 #include <PulseSensorPlayground.h>     // Includes the PulseSensorPlayground Library.   
+#include <SoftwareSerial.h>
+
+SoftwareSerial EEBlue(10, 11); // RX | TX
+#define TxD 10
 
 //  Variables
 const int PulseWire = 0;       // PulseSensor PURPLE WIRE connected to ANALOG PIN 0
@@ -21,11 +25,11 @@ int Threshold = 550;           // Determine which Signal to "count as a beat" an
                                
 PulseSensorPlayground pulseSensor;  // Creates an instance of the PulseSensorPlayground object called "pulseSensor"
 
-
 void setup() {   
-
-  Serial.begin(9600);          // For Serial Monitor
-
+  Serial.begin(9600);
+  EEBlue.begin(9600);  //Default Baud for comm, it may be different for your Module. 
+  //Serial.println("The bluetooth gates are open.\n Connect to HC-05 from any other bluetooth device with 1234 as pairing key!.");
+ 
   // Configure the PulseSensor object, by assigning our variables to it. 
   pulseSensor.analogInput(PulseWire);   
   pulseSensor.blinkOnPulse(LED13);       //auto-magically blink Arduino's LED with heartbeat.
@@ -47,10 +51,17 @@ void loop() {
 if (pulseSensor.sawStartOfBeat()) {            // Constantly test to see if "a beat happened". 
  //Serial.println("♥  A HeartBeat Happened ! "); // If test is "true", print a message "a heartbeat happened".
  //Serial.print("BPM: ");                        // Print phrase "BPM: " 
- Serial.print(myBPM);  
- Serial.print("\n");// Print the value inside of myBPM. 
+ Serial.print(myBPM);  // Print the value inside of myBPM. 
+ Serial.print("\n"); // using manual print /n instead of println because this makes it so that i can just take of the last two bytes of the serial input each time regardless of the byte length
+ EEBlue.write(myBPM);
 }
-
+  // Feed any data from bluetooth to Terminal.
+  //if (EEBlue.available())
+    //Serial.write(EEBlue.read());
+ 
+  // Feed all data from termial to bluetooth
+  //if (Serial.available())
+  
   delay(20);                    // considered best practice in a simple sketch.
 
 }
