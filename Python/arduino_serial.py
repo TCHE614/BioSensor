@@ -3,6 +3,7 @@ import sqlite3
 import time
 import sys, select, os
 import serial.tools.list_ports
+
 #Future additions that can be added: encryption so that user data eg bpm is encrypted
 #set up security so a password and username set up to ensure only the doctor can access the information
 
