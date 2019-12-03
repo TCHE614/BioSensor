@@ -1,14 +1,31 @@
 import serial
 import sqlite3
 import time
+import datetime
+import random
 import sys, select, os
 import serial.tools.list_ports
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import matplotlib.animation as animation
+from dateutil import parser
+from matplotlib import style
+
+#STYLES
+style.use('fivethirtyeight')
+plt.rcParams.update({'font.size': 10})
 
 #Future additions that can be added: encryption so that user data eg bpm is encrypted
 #set up security so a password and username set up to ensure only the doctor can access the information
 
+# set up plot graph 
+fig = plt.figure()
+ax1 = fig.add_subplot(1,1,1)
+
 # s=b'0000'
-sample =0
+
+
+sample = 0
 sampleFlag = True
 CreateDatabaseFlag = False
 previousValue = 60 #average value not used
@@ -45,7 +62,34 @@ except:
         print("No Ports Found ")
         exit
 
-while 1:
+
+
+def animate(i):
+    global sample
+    global sampleFlag
+    global CreateDatabaseFlag
+    global previousValue
+    global NoDatatimer
+    global PatientsName
+    global port
+    global ser
+    #OPEN DATABASE
+    conn = sqlite3.connect('BPMDatabase.db')
+    c = conn.cursor()
+    c.execute('SELECT Time, BPMValue FROM BPM WHERE Patient = ?',(PatientsName,))
+    data = c.fetchall()
+    dates = []
+    values = []
+
+    for row in data:
+        ts = datetime.datetime.fromtimestamp(int(row[0])).strftime('%M:%S')
+        dates.append(str(ts))
+        values.append(row[1])
+
+    ax1.clear()
+    ax1.plot(dates,values)
+    conn.close()
+    
     #set up serial connection with Arduino
     # print("test1")
     #reading the serial inputs
@@ -126,6 +170,12 @@ while 1:
         print(int(BPMDecoded))
     except: 
         pass
+
+
+
+print("Please place index or middle finger on the tracker.")
     
 
 
+ani = animation.FuncAnimation(fig, animate, interval=1000)
+plt.show()
