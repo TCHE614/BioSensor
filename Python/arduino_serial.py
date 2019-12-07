@@ -21,7 +21,7 @@ plt.rcParams.update({'font.size': 10})
 # set up plot graph 
 fig = plt.figure()
 ax1 = fig.add_subplot(1,1,1)
-
+ax2 = fig.add_subplot(2,1,1)
 # s=b'0000'
 
 
@@ -73,10 +73,14 @@ def animate(i):
     global PatientsName
     global port
     global ser
+
+    #Using epoch time 12:00am, January 1, 1970 as reference 
+    currenttime = time.time() #number of seconds since the reference point
+    secondtime = currenttime -60.0
     #OPEN DATABASE
     conn = sqlite3.connect('BPMDatabase.db')
     c = conn.cursor()
-    c.execute('SELECT Time, BPMValue FROM BPM WHERE Patient = ?',(PatientsName,))
+    c.execute('SELECT Time, BPMValue FROM BPM WHERE Patient = ? AND Time > ?',(PatientsName,secondtime,))
     data = c.fetchall()
     dates = []
     values = []
@@ -89,7 +93,28 @@ def animate(i):
     ax1.clear()
     ax1.plot(dates,values)
     conn.close()
-    
+    spiderid = "PC_Spider(2)"
+    #connect to the spider database
+    conn = sqlite3.connect("code\\Assets\\Plugins\\UnityDatabase.db", uri=True)
+    c = conn.cursor()
+    c.execute('SELECT time, changeDirection FROM my_table WHERE id = ? AND time > ?',(spiderid,secondtime,))
+    XD = c.fetchall()
+    timelists = []
+    changes = []
+
+    for row in XD:
+        #sep = '.'
+        #rest = row[0].split(sep, 1)[0]
+        # timedecoded = row[0].decode("utf-8") #decode byte into string then int 
+        ts = datetime.datetime.fromtimestamp(int(row[0])).strftime('%M:%S')
+        timelists.append(str(ts))
+        changes.append(row[1])
+
+    ax2.clear()
+    ax2.plot(timelists,changes)
+    conn.close()
+
+
     #set up serial connection with Arduino
     # print("test1")
     #reading the serial inputs
@@ -117,8 +142,7 @@ def animate(i):
     #     previousValue = IntBPM
     #     sampleFlag = False
 
-    #Using epoch time 12:00am, January 1, 1970 as reference 
-    currenttime = time.time() #number of seconds since the reference point
+    
 
     #make sure that only valid data is put into the database so random spikes should be ignored
 
