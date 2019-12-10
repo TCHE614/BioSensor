@@ -10,7 +10,8 @@ import matplotlib.dates as mdates
 import matplotlib.animation as animation
 from dateutil import parser
 from matplotlib import style
-
+from matplotlib import gridspec
+myfont_size = 10
 #STYLES
 style.use('fivethirtyeight')
 plt.rcParams.update({'font.size': 10})
@@ -19,11 +20,20 @@ plt.rcParams.update({'font.size': 10})
 #set up security so a password and username set up to ensure only the doctor can access the information
 
 # set up plot graph 
-fig = plt.figure()
-ax1 = fig.add_subplot(1,1,1)
-ax2 = fig.add_subplot(2,1,1)
-# s=b'0000'
+fig = plt.figure(constrained_layout=True)
+gs = fig.add_gridspec(10, 10)
 
+# gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
+# fig, (ax1, ax2) = plt.subplots(2)
+ax1 = fig.add_subplot(gs[6:, :])
+ax2 = fig.add_subplot(gs[3, :])
+ax3 = fig.add_subplot(gs[4, :])
+ax4 = fig.add_subplot(gs[5, :])
+ax5 = fig.add_subplot(gs[0, :])
+ax6 = fig.add_subplot(gs[1, :])
+ax7 = fig.add_subplot(gs[2, :])
+fig.suptitle('Spider movement and heart rate tracker')
+# s=b'0000'
 
 sample = 0
 sampleFlag = True
@@ -45,7 +55,10 @@ print("Hi", PatientsName)
 #Finding the Arudino port and seeting that as the serial port
 ports = list(serial.tools.list_ports.comports())
 for p in ports:
-     if 'Arduino Uno' in p.description:
+    if 'Arduino Uno' in p.description:
+        port = p.device
+        print('Using ' + p.device + " as the serial")
+    if 'USB Serial Device' in p.description:
         port = p.device
         print('Using ' + p.device + " as the serial")
 
@@ -82,41 +95,113 @@ def animate(i):
     c = conn.cursor()
     c.execute('SELECT Time, BPMValue FROM BPM WHERE Patient = ? AND Time > ?',(PatientsName,secondtime,))
     data = c.fetchall()
+    conn.close()
     dates = []
     values = []
 
     for row in data:
-        ts = datetime.datetime.fromtimestamp(int(row[0])).strftime('%M:%S')
+        ts = datetime.datetime.fromtimestamp(int(row[0])).strftime('%S')
         dates.append(str(ts))
         values.append(row[1])
 
     ax1.clear()
     ax1.plot(dates,values)
-    conn.close()
-    spiderid = "PC_Spider(2)"
+    
+    #Spider 1 movement onto graph
+    spiderid1 = "PC_Spider(1)"
     #connect to the spider database
     conn = sqlite3.connect("code\\Assets\\Plugins\\UnityDatabase.db", uri=True)
     c = conn.cursor()
-    c.execute('SELECT time, changeDirection FROM my_table WHERE id = ? AND time > ?',(spiderid,secondtime,))
-    XD = c.fetchall()
+    c.execute('SELECT time, changeDirection FROM Spider_Table WHERE id = ? AND time > ?',(spiderid1,secondtime,))
+    SpiderList = c.fetchall()
+    conn.close()
     timelists = []
     changes = []
-
-    for row in XD:
-        #sep = '.'
-        #rest = row[0].split(sep, 1)[0]
-        # timedecoded = row[0].decode("utf-8") #decode byte into string then int 
-        ts = datetime.datetime.fromtimestamp(int(row[0])).strftime('%M:%S')
+    spiderListcounter =0
+    for row in SpiderList:
+        ts = datetime.datetime.fromtimestamp(int(row[0])).strftime('%S')
         timelists.append(str(ts))
         changes.append(row[1])
+        spiderListcounter += 1
 
     ax2.clear()
+    ax2.set_ylabel(spiderid1, fontsize=myfont_size)
     ax2.plot(timelists,changes)
+
+    #Spider 2 movement onto graph
+    spiderid2 = "PC_Spider(2)"
+    #connect to the spider database
+    conn = sqlite3.connect("code\\Assets\\Plugins\\UnityDatabase.db", uri=True)
+    c = conn.cursor()
+    c.execute('SELECT time, changeDirection FROM Spider_Table WHERE id = ? AND time > ?',(spiderid2,secondtime,))
+    SpiderList = c.fetchall()
     conn.close()
+    timelists = []
+    changes = []
+    spiderListcounter =0
+    for row in SpiderList:
+        ts = datetime.datetime.fromtimestamp(int(row[0])).strftime('%S')
+        timelists.append(str(ts))
+        changes.append(row[1])
+        spiderListcounter += 1
+
+    ax3.clear()
+    ax3.set_ylabel(spiderid2, fontsize=myfont_size)
+    ax3.plot(timelists,changes)
+
+    #Spider 5 movement onto graph
+    spiderid5 = "PC_Spider(5)"
+    #connect to the spider database
+    conn = sqlite3.connect("code\\Assets\\Plugins\\UnityDatabase.db", uri=True)
+    c = conn.cursor()
+    c.execute('SELECT time, changeDirection FROM Spider_Table WHERE id = ? AND time > ?',(spiderid5,secondtime,))
+    SpiderList = c.fetchall()
+    conn.close()
+    timelists = []
+    changes = []
+    spiderListcounter =0
+    for row in SpiderList:
+        ts = datetime.datetime.fromtimestamp(int(row[0])).strftime('%S')
+        timelists.append(str(ts))
+        changes.append(row[1])
+        spiderListcounter += 1
+    ax4.clear()
+    ax4.set_ylabel(spiderid5, fontsize=myfont_size)
+    ax4.plot(timelists,changes)
+
+
+    #x,y and z plot
+    #Spider 5 movement onto graph
+    spiderid5 = "PC_Spider(5)"
+    #connect to the spider database
+    conn = sqlite3.connect("code\\Assets\\Plugins\\UnityDatabase.db", uri=True)
+    c = conn.cursor()
+    c.execute('SELECT time,x,y,z FROM HMD_Table WHERE time > ?',(secondtime,))
+    SpiderList = c.fetchall()
+    conn.close()
+    timelists = []
+    x = []
+    y = []
+    z = []
+    for row in SpiderList:
+        ts = datetime.datetime.fromtimestamp(int(row[0])).strftime('%S')
+        timelists.append(str(ts))
+        x.append(row[1])
+        y.append(row[2])
+        z.append(row[3])
+    ax5.clear()
+    ax5.set_ylabel("HMD x", fontsize=myfont_size)
+    ax5.plot(timelists,x)
+    ax6.clear()
+    ax6.set_ylabel("HMD y", fontsize=myfont_size)
+    ax6.plot(timelists,y)
+    ax7.clear()
+    ax7.set_ylabel("HMD z", fontsize=myfont_size)
+    ax7.plot(timelists,z)
+
 
 
     #set up serial connection with Arduino
-    # print("test1")
     #reading the serial inputs
     s = ser.read_until()
     BPMDigit = s[:-1]     #Remove \n from serial input
@@ -137,13 +222,8 @@ def animate(i):
         print("Data is now being captured")
         previousValue = IntBPM
         sampleFlag = False
-    # elif sample> 10 and NoDatatimer >30:
-    #     print("Data is now being captured")
-    #     previousValue = IntBPM
-    #     sampleFlag = False
 
     
-
     #make sure that only valid data is put into the database so random spikes should be ignored
 
     #ensure that only valid data is written into the database
@@ -155,7 +235,6 @@ def animate(i):
         try:
             conn = sqlite3.connect("Python/BPMDatabase.db")
             #print("one")
-
             c = conn.cursor()
             c.execute("""INSERT INTO BPM 
                     (Patient ,BPMValue, Time) 
@@ -188,18 +267,13 @@ def animate(i):
                 conn.commit()
                 conn.close()
 
-                
-    #print("Sample = %d", sample)
     try:
         print(int(BPMDecoded))
     except: 
         pass
 
 
-
 print("Please place index or middle finger on the tracker.")
-    
-
 
 ani = animation.FuncAnimation(fig, animate, interval=1000)
 plt.show()
