@@ -32,13 +32,19 @@ ax4 = fig.add_subplot(gs[5, :])
 ax5 = fig.add_subplot(gs[0, :])
 ax6 = fig.add_subplot(gs[1, :])
 ax7 = fig.add_subplot(gs[2, :])
-fig.suptitle('Spider movement and heart rate tracker')
+fig.suptitle('HMD and Spider movement and heart rate tracker')
+ax2.set_ylabel("Spider 1", fontsize=myfont_size)
+ax3.set_ylabel("Spider 2", fontsize=myfont_size)
+ax4.set_ylabel("Spider 5", fontsize=myfont_size)
+ax5.set_ylabel("HMD x", fontsize=myfont_size)
+ax6.set_ylabel("HMD y", fontsize=myfont_size)
+ax7.set_ylabel("HMD z", fontsize=myfont_size)
 # s=b'0000'
 
 sample = 0
 sampleFlag = True
 CreateDatabaseFlag = False
-previousValue = 60 #average value not used
+previousValue = 0 #average value not used
 NoDatatimer =0 # if no data has been detected re sample the data. 
 
 # Ask for name of that data that is getting entered
@@ -58,6 +64,9 @@ for p in ports:
     if 'Arduino Uno' in p.description:
         port = p.device
         print('Using ' + p.device + " as the serial")
+    if 'Arduino Mega 2560' in p.description:
+        port = p.device
+        print('Using ' + p.device + " as the serial")
     if 'USB Serial Device' in p.description:
         port = p.device
         print('Using ' + p.device + " as the serial")
@@ -65,11 +74,11 @@ for p in ports:
 #open either the linux port or windows port
 try:
     #linux
-    ser = serial.Serial('/dev/ttyACM0', 9600, timeout=5, parity=serial.PARITY_NONE, rtscts=1) 
+    ser = serial.Serial('/dev/ttyACM0', 9600, timeout=2, parity=serial.PARITY_NONE, rtscts=1) 
 except:
     try:
         #windows
-        ser = serial.Serial(port, 9600, timeout=5, parity=serial.PARITY_NONE, rtscts=1)
+        ser = serial.Serial(port, 9600, timeout=2, parity=serial.PARITY_NONE, rtscts=1)
     except:
         #no ports
         print("No Ports Found ")
@@ -86,15 +95,32 @@ def animate(i):
     global PatientsName
     global port
     global ser
-
+    #Spider 1 movement onto graph
+    spiderid1 = "PC_Spider(1)"
+        #Spider 2 movement onto graph
+    spiderid2 = "PC_Spider(2)"
+        #Spider 5 movement onto graph
+    spiderid5 = "PC_Spider(5)"
     #Using epoch time 12:00am, January 1, 1970 as reference 
     currenttime = time.time() #number of seconds since the reference point
-    secondtime = currenttime -60.0
+    secondtime = currenttime -40.0
     #OPEN DATABASE
     conn = sqlite3.connect('BPMDatabase.db')
     c = conn.cursor()
     c.execute('SELECT Time, BPMValue FROM BPM WHERE Patient = ? AND Time > ?',(PatientsName,secondtime,))
     data = c.fetchall()
+    conn.close()
+    
+    conn = sqlite3.connect("code\\Assets\\Plugins\\UnityDatabase.db", uri=True)
+    c = conn.cursor()
+    c.execute('SELECT time, changeDirection FROM Spider_Table WHERE id = ? AND time > ?',(spiderid1,secondtime,))
+    SpiderList1 = c.fetchall()
+    c.execute('SELECT time, changeDirection FROM Spider_Table WHERE id = ? AND time > ?',(spiderid2,secondtime,))
+    SpiderList2 = c.fetchall()
+    c.execute('SELECT time, changeDirection FROM Spider_Table WHERE id = ? AND time > ?',(spiderid5,secondtime,))
+    SpiderList3 = c.fetchall()
+    c.execute('SELECT time,x,y,z FROM HMD_Table WHERE time > ?',(secondtime,))
+    HMDList = c.fetchall()
     conn.close()
     dates = []
     values = []
@@ -107,99 +133,78 @@ def animate(i):
     ax1.clear()
     ax1.plot(dates,values)
     
-    #Spider 1 movement onto graph
-    spiderid1 = "PC_Spider(1)"
+
     #connect to the spider database
-    conn = sqlite3.connect("code\\Assets\\Plugins\\UnityDatabase.db", uri=True)
-    c = conn.cursor()
-    c.execute('SELECT time, changeDirection FROM Spider_Table WHERE id = ? AND time > ?',(spiderid1,secondtime,))
-    SpiderList = c.fetchall()
-    conn.close()
-    timelists = []
-    changes = []
-    spiderListcounter =0
-    for row in SpiderList:
+    # conn = sqlite3.connect("code\\Assets\\Plugins\\UnityDatabase.db", uri=True)
+    # c = conn.cursor()
+
+    # conn.close()
+    timelists1 = []
+    changes1 = []
+    for row in SpiderList1:
         ts = datetime.datetime.fromtimestamp(int(row[0])).strftime('%S')
-        timelists.append(str(ts))
-        changes.append(row[1])
-        spiderListcounter += 1
+        timelists1.append(str(ts))
+        changes1.append(row[1])
 
     ax2.clear()
-    ax2.set_ylabel(spiderid1, fontsize=myfont_size)
-    ax2.plot(timelists,changes)
 
-    #Spider 2 movement onto graph
-    spiderid2 = "PC_Spider(2)"
+    ax2.plot(timelists1,changes1)
+
+
     #connect to the spider database
-    conn = sqlite3.connect("code\\Assets\\Plugins\\UnityDatabase.db", uri=True)
-    c = conn.cursor()
-    c.execute('SELECT time, changeDirection FROM Spider_Table WHERE id = ? AND time > ?',(spiderid2,secondtime,))
-    SpiderList = c.fetchall()
-    conn.close()
-    timelists = []
-    changes = []
-    spiderListcounter =0
-    for row in SpiderList:
+    # conn = sqlite3.connect("code\\Assets\\Plugins\\UnityDatabase.db", uri=True)
+    # c = conn.cursor()
+
+    # conn.close()
+    timelists2 = []
+    changes2 = []
+    for row in SpiderList2:
         ts = datetime.datetime.fromtimestamp(int(row[0])).strftime('%S')
-        timelists.append(str(ts))
-        changes.append(row[1])
-        spiderListcounter += 1
+        timelists2.append(str(ts))
+        changes2.append(row[1])
 
     ax3.clear()
-    ax3.set_ylabel(spiderid2, fontsize=myfont_size)
-    ax3.plot(timelists,changes)
 
-    #Spider 5 movement onto graph
-    spiderid5 = "PC_Spider(5)"
+    ax3.plot(timelists2,changes2)
+
+
     #connect to the spider database
-    conn = sqlite3.connect("code\\Assets\\Plugins\\UnityDatabase.db", uri=True)
-    c = conn.cursor()
-    c.execute('SELECT time, changeDirection FROM Spider_Table WHERE id = ? AND time > ?',(spiderid5,secondtime,))
-    SpiderList = c.fetchall()
-    conn.close()
-    timelists = []
-    changes = []
-    spiderListcounter =0
-    for row in SpiderList:
+    # conn = sqlite3.connect("code\\Assets\\Plugins\\UnityDatabase.db", uri=True)
+    # c = conn.cursor()
+
+    # conn.close()
+    timelists5 = []
+    changes5 = []
+    for row in SpiderList3:
         ts = datetime.datetime.fromtimestamp(int(row[0])).strftime('%S')
-        timelists.append(str(ts))
-        changes.append(row[1])
-        spiderListcounter += 1
+        timelists5.append(str(ts))
+        changes5.append(row[1])
     ax4.clear()
-    ax4.set_ylabel(spiderid5, fontsize=myfont_size)
-    ax4.plot(timelists,changes)
+    ax4.plot(timelists5,changes5)
 
 
     #x,y and z plot
-    #Spider 5 movement onto graph
-    spiderid5 = "PC_Spider(5)"
     #connect to the spider database
-    conn = sqlite3.connect("code\\Assets\\Plugins\\UnityDatabase.db", uri=True)
-    c = conn.cursor()
-    c.execute('SELECT time,x,y,z FROM HMD_Table WHERE time > ?',(secondtime,))
-    SpiderList = c.fetchall()
-    conn.close()
+    # conn = sqlite3.connect("code\\Assets\\Plugins\\UnityDatabase.db", uri=True)
+    # c = conn.cursor()
+
+    # conn.close()
     timelists = []
     x = []
     y = []
     z = []
-    for row in SpiderList:
+    for row in HMDList:
         ts = datetime.datetime.fromtimestamp(int(row[0])).strftime('%S')
         timelists.append(str(ts))
         x.append(row[1])
         y.append(row[2])
         z.append(row[3])
     ax5.clear()
-    ax5.set_ylabel("HMD x", fontsize=myfont_size)
     ax5.plot(timelists,x)
     ax6.clear()
-    ax6.set_ylabel("HMD y", fontsize=myfont_size)
     ax6.plot(timelists,y)
     ax7.clear()
-    ax7.set_ylabel("HMD z", fontsize=myfont_size)
     ax7.plot(timelists,z)
-
-
 
     #set up serial connection with Arduino
     #reading the serial inputs
