@@ -33,12 +33,7 @@ ax5 = fig.add_subplot(gs[0, :])
 ax6 = fig.add_subplot(gs[1, :])
 ax7 = fig.add_subplot(gs[2, :])
 fig.suptitle('HMD and Spider movement and heart rate tracker')
-ax2.set_ylabel("Spider 1", fontsize=myfont_size)
-ax3.set_ylabel("Spider 2", fontsize=myfont_size)
-ax4.set_ylabel("Spider 5", fontsize=myfont_size)
-ax5.set_ylabel("HMD x", fontsize=myfont_size)
-ax6.set_ylabel("HMD y", fontsize=myfont_size)
-ax7.set_ylabel("HMD z", fontsize=myfont_size)
+
 # s=b'0000'
 
 sample = 0
@@ -110,21 +105,20 @@ def animate(i):
     c.execute('SELECT Time, BPMValue FROM BPM WHERE Patient = ? AND Time > ?',(PatientsName,secondtime,))
     data = c.fetchall()
     conn.close()
-    
+
     conn = sqlite3.connect("code\\Assets\\Plugins\\UnityDatabase.db", uri=True)
     c = conn.cursor()
-    c.execute('SELECT time, changeDirection FROM Spider_Table WHERE id = ? AND time > ?',(spiderid1,secondtime,))
+    c.execute('SELECT time, changeDirection, id FROM Spider_Table WHERE time > ?',(secondtime,))
     SpiderList1 = c.fetchall()
-    c.execute('SELECT time, changeDirection FROM Spider_Table WHERE id = ? AND time > ?',(spiderid2,secondtime,))
-    SpiderList2 = c.fetchall()
-    c.execute('SELECT time, changeDirection FROM Spider_Table WHERE id = ? AND time > ?',(spiderid5,secondtime,))
-    SpiderList3 = c.fetchall()
+    # c.execute('SELECT time, changeDirection FROM Spider_Table WHERE id = ? AND time > ?',(spiderid2,secondtime,))
+    # SpiderList2 = c.fetchall()
+    # c.execute('SELECT time, changeDirection FROM Spider_Table WHERE id = ? AND time > ?',(spiderid5,secondtime,))
+    # SpiderList3 = c.fetchall()
     c.execute('SELECT time,x,y,z FROM HMD_Table WHERE time > ?',(secondtime,))
     HMDList = c.fetchall()
     conn.close()
     dates = []
     values = []
-
     for row in data:
         ts = datetime.datetime.fromtimestamp(int(row[0])).strftime('%S')
         dates.append(str(ts))
@@ -132,55 +126,46 @@ def animate(i):
 
     ax1.clear()
     ax1.plot(dates,values)
-    
+    ax1.set_xlabel("time", fontsize=myfont_size)
+    ax1.set_ylabel("BPM", fontsize=myfont_size)
 
     #connect to the spider database
     # conn = sqlite3.connect("code\\Assets\\Plugins\\UnityDatabase.db", uri=True)
     # c = conn.cursor()
 
-    # conn.close()
+    #SPIDER 1
     timelists1 = []
     changes1 = []
-    for row in SpiderList1:
-        ts = datetime.datetime.fromtimestamp(int(row[0])).strftime('%S')
-        timelists1.append(str(ts))
-        changes1.append(row[1])
-
-    ax2.clear()
-
-    ax2.plot(timelists1,changes1)
-
-
-    #connect to the spider database
-    # conn = sqlite3.connect("code\\Assets\\Plugins\\UnityDatabase.db", uri=True)
-    # c = conn.cursor()
-
-    # conn.close()
     timelists2 = []
     changes2 = []
-    for row in SpiderList2:
-        ts = datetime.datetime.fromtimestamp(int(row[0])).strftime('%S')
-        timelists2.append(str(ts))
-        changes2.append(row[1])
-
-    ax3.clear()
-
-    ax3.plot(timelists2,changes2)
-
-
-    #connect to the spider database
-    # conn = sqlite3.connect("code\\Assets\\Plugins\\UnityDatabase.db", uri=True)
-    # c = conn.cursor()
-
-    # conn.close()
     timelists5 = []
     changes5 = []
-    for row in SpiderList3:
-        ts = datetime.datetime.fromtimestamp(int(row[0])).strftime('%S')
-        timelists5.append(str(ts))
-        changes5.append(row[1])
+    for row in SpiderList1:
+        #print(row[2])
+        if(row[2] == spiderid1):
+            ts = datetime.datetime.fromtimestamp(int(row[0])).strftime('%S')
+            timelists1.append(str(ts))
+            changes1.append(row[1])
+            # print("1")
+        if(row[2] == spiderid2):
+            ts = datetime.datetime.fromtimestamp(int(row[0])).strftime('%S')
+            timelists2.append(str(ts))
+            changes2.append(row[1])
+        if(row[2] == spiderid5):
+            ts = datetime.datetime.fromtimestamp(int(row[0])).strftime('%S')
+            timelists5.append(str(ts))
+            changes5.append(row[1])
+            # print("5")
+        
+    ax2.clear()
+    ax2.plot(timelists1,changes1)
+    ax3.clear()
+    ax3.plot(timelists2,changes2)
     ax4.clear()
     ax4.plot(timelists5,changes5)
+    ax2.set_ylabel("Spider 1", fontsize=myfont_size)
+    ax3.set_ylabel("Spider 2", fontsize=myfont_size)
+    ax4.set_ylabel("Spider 5", fontsize=myfont_size)
 
 
     #x,y and z plot
@@ -205,7 +190,9 @@ def animate(i):
     ax6.plot(timelists,y)
     ax7.clear()
     ax7.plot(timelists,z)
-
+    ax5.set_ylabel("HMD x", fontsize=myfont_size)
+    ax6.set_ylabel("HMD y", fontsize=myfont_size)
+    ax7.set_ylabel("HMD z", fontsize=myfont_size)
     #set up serial connection with Arduino
     #reading the serial inputs
     s = ser.read_until()
